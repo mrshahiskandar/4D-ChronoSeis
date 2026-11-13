@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+numpy
+scipy
+segyio
+matplotlib
+pandas
+openpyxl
+lasio
+jupyter_client
+ipykernel
+openai

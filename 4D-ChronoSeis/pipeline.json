@@ -1,0 +1,607 @@
+{
+ "_comment": "Stages of the team's GitHub notebooks. Cell numbers are 0-based positions in each .ipynb. The notebooks themselves are never modified; 'inject_after' runs extra assignment lines after a cell, 'replace' swaps exact literals in the cell source at run time only. Placeholders: {base} {monitor} {markers_csv} {platform_csv} {wells_dir} {workdir}. A replacement is skipped when its placeholder is empty.",
+ "notebooks": [
+  {
+   "id": "4d",
+   "file": "Gemma4_GPU_All_8_Wellhead_Overlays.ipynb",
+   "title": "4D ChronoSeis workflow",
+   "summary": "Match Baseline/Monitor, 4D difference, horizon autopicking from well markers, RMS / NdRMS / sweetness along horizons, hardening/softening classes.",
+   "kernel": "slurm-py312-gpu",
+   "fallback_kernel": "python3",
+   "inject_after": {
+    "2": "baseline_path = {base!r}\nmonitor_path = {monitor!r}\nprint('[app] Using Baseline:', baseline_path)\nprint('[app] Using Monitor :', monitor_path)",
+    "38": "_export(None)\nprint('[app] Called the 4D ChronoSeis export: class CSVs and maps saved.')"
+   },
+   "replace": {
+    "/home/apgce_team_08/Baseline_Matched.sgy": "{base}",
+    "/home/apgce_team_08/Combined_Well_Markers_Colour_Merged_3.csv": "{markers_csv}",
+    "/home/apgce_team_08/Platform.csv": "{platform_csv}",
+    "/home/apgce_team_08/To_Overlay_Horizon/": "{wells_dir}/"
+   },
+   "stages": [
+    {
+     "id": "install",
+     "title": "Install / upgrade packages",
+     "cells": [
+      0
+     ],
+     "default_selected": false,
+     "flags": [
+      "install"
+     ],
+     "note": "Runs %pip install -U on the shared environment. Only needed once."
+    },
+    {
+     "id": "gemma_test",
+     "title": "Gemma connection test",
+     "cells": [
+      1
+     ],
+     "flags": [
+      "gemma"
+     ],
+     "note": "Checks the hosted Gemma 4 endpoint answers. Not part of \"Run full workflow\": the app checks Gemma itself (Advisor status light). Run it on its own if wanted.",
+     "default_selected": false
+    },
+    {
+     "id": "load_match",
+     "title": "Load & match Baseline / Monitor",
+     "cells": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "flags": [
+      "uses_selection",
+      "memory"
+     ],
+     "note": "Loads both SEG-Y volumes, matches traces by inline/crossline, QC of geometry and NaNs."
+    },
+    {
+     "id": "difference",
+     "title": "4D difference volume",
+     "cells": [
+      9,
+      10,
+      11
+     ],
+     "flags": [
+      "writes_files"
+     ],
+     "note": "Monitor minus Baseline, exported as SEG-Y with Baseline coordinates, plus matched geometry CSV."
+    },
+    {
+     "id": "viewer",
+     "title": "Seismic section viewer",
+     "cells": [
+      12,
+      13,
+      14
+     ],
+     "flags": [
+      "interactive"
+     ],
+     "note": "Interactive inline / crossline / time-slice viewer (ipywidgets)."
+    },
+    {
+     "id": "precondition",
+     "title": "Monitor preconditioning (GPU)",
+     "cells": [
+      15,
+      16
+     ],
+     "flags": [
+      "gpu",
+      "install"
+     ],
+     "note": "High-cut filter and two-pass structure-oriented smoothing with CuPy."
+    },
+    {
+     "id": "seeds",
+     "title": "Horizon setup & well-marker seeds",
+     "cells": [
+      17,
+      18,
+      19
+     ],
+     "flags": [
+      "needs_files"
+     ],
+     "note": "Needs the combined well-marker CSV."
+    },
+    {
+     "id": "picking",
+     "title": "Horizon autopicking",
+     "cells": [
+      20,
+      21
+     ],
+     "note": "Lateral-continuity NCC propagation for every marker horizon."
+    },
+    {
+     "id": "refine",
+     "title": "Cycle-skip refinement & smoothing",
+     "cells": [
+      22,
+      23
+     ],
+     "flags": [
+      "gpu"
+     ],
+     "note": "Hilbert phase / dip-plane refinement, then smoothing with inter-horizon separation."
+    },
+    {
+     "id": "import_horizons",
+     "title": "Use existing horizons (instead of picking)",
+     "cells": [],
+     "code_file": "snippets/import_horizons.py",
+     "default_selected": false,
+     "flags": [
+      "needs_files"
+     ],
+     "note": "Reads horizon TXT files (tab-separated X, Y, Inline, Crossline, TWT) you already have and replaces the seeds, picking and refinement stages. Set 'Existing horizons' in step 2; the app does this automatically in 'Run full workflow'."
+    },
+    {
+     "id": "well_helper",
+     "title": "Well overlay helper",
+     "cells": [
+      24,
+      25,
+      26
+     ],
+     "flags": [
+      "install",
+      "needs_files"
+     ],
+     "note": "Reads well heads, checkshots and deviations from the well folder (used by later maps)."
+    },
+    {
+     "id": "horizon_qc",
+     "title": "Interactive horizon QC",
+     "cells": [
+      27
+     ],
+     "flags": [
+      "interactive"
+     ],
+     "note": "Section browser and TWT map (ipywidgets). Runs harmlessly in batch; use JupyterLab to interact."
+    },
+    {
+     "id": "export_h",
+     "title": "Export picked horizons",
+     "cells": [
+      28
+     ],
+     "flags": [
+      "writes_files"
+     ],
+     "note": "Tab-separated X Y Inline Crossline TWT per horizon."
+    },
+    {
+     "id": "rms",
+     "title": "RMS / dRMS / NdRMS along horizons + maps",
+     "cells": [
+      29,
+      30,
+      31
+     ],
+     "flags": [
+      "writes_files"
+     ],
+     "note": "\u00b110 ms window around each horizon; maps saved per attribute."
+    },
+    {
+     "id": "sweetness",
+     "title": "Sweetness and 4D sweetness change (GPU)",
+     "cells": [
+      32,
+      33,
+      34,
+      35
+     ],
+     "flags": [
+      "gpu",
+      "install"
+     ],
+     "note": "Hilbert-based sweetness per horizon."
+    },
+    {
+     "id": "viewer3",
+     "title": "3\u00d73 attribute map viewer",
+     "cells": [
+      36,
+      37
+     ],
+     "flags": [
+      "interactive"
+     ],
+     "note": "Interactive viewer of RMS, dRMS, NdRMS and sweetness maps."
+    },
+    {
+     "id": "classes",
+     "title": "Hardening / softening / unswept classes",
+     "cells": [
+      38
+     ],
+     "flags": [
+      "interactive",
+      "needs_files",
+      "writes_files",
+      "cpu_ok"
+     ],
+     "note": "Platform-constrained, denoised 4D classes; the app then calls the engine's own export to save CSVs and maps. Runs on its own from the saved RMS/NdRMS files (no seismic, no GPU needed).",
+     "prep_file": "snippets/classes_prep.py"
+    }
+   ]
+  },
+  {
+   "id": "petro1",
+   "file": "Well4_6_7_Phase1_PhysicsLoss_NeuralNetwork_ReadOnlyFix.ipynb",
+   "title": "Wells: physics-loss neural network (Phase 1)",
+   "summary": "Predicts interpreted log curves (porosity, saturation, volumes) from raw logs for Wells 4, 6, 7, validated leaving one well out.",
+   "kernel": "python3",
+   "fallback_kernel": "python3",
+   "stages": [
+    {
+     "id": "setup",
+     "title": "Imports & settings",
+     "cells": [
+      1,
+      2
+     ]
+    },
+    {
+     "id": "data",
+     "title": "Discover files, read LAS, checkshot time conversion",
+     "cells": [
+      3,
+      4,
+      5
+     ],
+     "flags": [
+      "needs_files"
+     ]
+    },
+    {
+     "id": "features",
+     "title": "Align depths, marker and physics features",
+     "cells": [
+      6,
+      7,
+      8,
+      9
+     ]
+    },
+    {
+     "id": "lowo",
+     "title": "Train & validate (leave one well out)",
+     "cells": [
+      10,
+      11,
+      12
+     ]
+    },
+    {
+     "id": "qc",
+     "title": "Presentation QC plots",
+     "cells": [
+      13
+     ],
+     "flags": [
+      "interactive"
+     ]
+    },
+    {
+     "id": "final",
+     "title": "Final model + save",
+     "cells": [
+      14,
+      15,
+      16
+     ],
+     "flags": [
+      "writes_files"
+     ]
+    },
+    {
+     "id": "helper",
+     "title": "Prediction helper for a new well",
+     "cells": [
+      17
+     ]
+    }
+   ],
+   "overlay": {
+    "from": "/home/apgce_team_08/link-to-apgce_team_08",
+    "dir": "team_root",
+    "outputs": [
+     "Well_4_6_7_Phase1_Multiwell_CPU_Output"
+    ]
+   }
+  },
+  {
+   "id": "petro3",
+   "file": "Well4_6_7_Phase3_MinReservoirThickness_1p5m.ipynb",
+   "title": "Wells: lithology & fluid classes (Phases 2\u20133)",
+   "summary": "Lithology and coal beds from Phase 1 predictions, then reservoir / fluid classes. Needs the saved Phase 1 model.",
+   "kernel": "python3",
+   "fallback_kernel": "python3",
+   "stages": [
+    {
+     "id": "setup",
+     "title": "Setup & data (same as Phase 1)",
+     "cells": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "flags": [
+      "needs_files"
+     ]
+    },
+    {
+     "id": "lith",
+     "title": "Phase 2: lithology & coal beds",
+     "cells": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+     ],
+     "flags": [
+      "writes_files"
+     ]
+    },
+    {
+     "id": "fluid",
+     "title": "Phase 3: reservoir & fluid classes",
+     "cells": [
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25
+     ],
+     "flags": [
+      "interactive",
+      "writes_files"
+     ]
+    }
+   ],
+   "overlay": {
+    "from": "/home/apgce_team_08/link-to-apgce_team_08",
+    "dir": "team_root",
+    "outputs": [
+     "Well_4_6_7_Phase1_Multiwell_CPU_Output",
+     "Well_4_6_7_Phase2_From_PhysicsLossNN_Output",
+     "Well_4_6_7_Phase3_FluidReservoir_Output"
+    ],
+    "seed": [
+     "Well_4_6_7_Phase1_Multiwell_CPU_Output"
+    ]
+   }
+  },
+  {
+   "id": "phase4",
+   "file": "Phase4_All_8_Wells_Marker_Similarity_CSV.ipynb",
+   "title": "Wells: Phase 4, all 8 wells (marker similarity, TWT classes)",
+   "summary": "Deploys the trained Phase 1-3 model to the 8 wells and exports marker similarity and the seven-well reservoir classification in TWT. Reads the team's well files and trained bundle; writes only into your output folder.",
+   "kernel": "python3",
+   "fallback_kernel": "python3",
+   "overlay": {
+    "from": "/home/apgce_team_08/link-to-apgce_team_08",
+    "dir": "team_root",
+    "outputs": [
+     "Well_To_Predict_Phase4_Output",
+     "Phase4_7Wells_Reservoir_Classification_TWT.csv"
+    ]
+   },
+   "stages": [
+    {
+     "id": "setup",
+     "title": "Load model, wells, checkshots, features",
+     "cells": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "flags": [
+      "needs_files"
+     ],
+     "note": "Reads the team's LAS, markers, checkshots and the trained bundle."
+    },
+    {
+     "id": "predict",
+     "title": "Predict lithology and fluid classes",
+     "cells": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+     ],
+     "flags": [
+      "writes_files"
+     ],
+     "note": "Includes the marker-similarity CSV export (Cell 9A)."
+    },
+    {
+     "id": "export",
+     "title": "Save results and combine seven wells",
+     "cells": [
+      17,
+      18,
+      19,
+      21
+     ],
+     "flags": [
+      "interactive",
+      "writes_files"
+     ],
+     "note": "Cell 18 is the interactive QC; Cell 19 writes the TWT classification CSV."
+    }
+   ]
+  },
+  {
+   "id": "phase5",
+   "file": "Phase5_Water_Oil_Gas_Correct_Cell12_Cell13_Order.ipynb",
+   "title": "Wells: Phase 5, TWT correlation and fluid intervals",
+   "summary": "Correlates seven wells in TWT, proposes markers with X/Y and pairs oil/gas/water intervals with the nearest marker. Run Phase 4 first (or it reads the team's existing Phase 4 results).",
+   "kernel": "python3",
+   "fallback_kernel": "python3",
+   "overlay": {
+    "from": "/home/apgce_team_08/link-to-apgce_team_08",
+    "dir": "team_root",
+    "outputs": [
+     "Phase5_Well_Correlation_Output"
+    ]
+   },
+   "stages": [
+    {
+     "id": "correlate",
+     "title": "Convert to TWT and correlate wells",
+     "cells": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+     ],
+     "flags": [
+      "needs_files"
+     ],
+     "note": "Checkshot-based TWT conversion of all curves and markers."
+    },
+    {
+     "id": "qc",
+     "title": "Interactive TWT QC",
+     "cells": [
+      11
+     ],
+     "flags": [
+      "interactive"
+     ],
+     "note": "Zoom and pan viewer."
+    },
+    {
+     "id": "export",
+     "title": "Export markers and fluid intervals",
+     "cells": [
+      13,
+      14
+     ],
+     "flags": [
+      "writes_files"
+     ],
+     "note": "Writes Phase5_Proposed_Markers_*.csv and Phase5_Fluid_Intervals_*.csv."
+    }
+   ]
+  },
+  {
+   "id": "rfi",
+   "file": "Phase6_Part3D_Fresh_PostPick_DirectSEGY_RMS_RFI.ipynb",
+   "title": "Remaining Fluid Index (Phase 6 Part 3D)",
+   "summary": "Reuses the team's saved horizon attributes, then computes and exports the RFI map for every horizon. Reads the team's files; writes RFI only into your output folder (phase6_3D/RFI). CPU, no GPU.",
+   "kernel": "python3",
+   "fallback_kernel": "python3",
+   "redirect": false,
+   "replace": {
+    "RFI_OUT = OUT/'RFI'": "RFI_OUT = Path({workdir!r})/'phase6_3D'/'RFI'",
+    "qc_table.to_csv(OUT/'Horizon_QC.csv'": "qc_table.to_csv(RFI_OUT.parent/'Horizon_QC.csv'",
+    "/home/apgce_team_08/Platform.csv": "{platform_csv}"
+   },
+   "inject_after": {
+    "7": "import matplotlib.pyplot as _plt\nfor _i, _n in enumerate(names, 1):\n    show_rfi_3d(_n, save=True)\n    _plt.close('all')\n    print('[app] RFI exported', _i, 'of', len(names), ':', _n)\nprint('[app] All RFI maps saved to', RFI_OUT)"
+   },
+   "stages": [
+    {
+     "id": "setup",
+     "title": "Settings, horizons and input checks",
+     "cells": [
+      1,
+      2
+     ],
+     "flags": [
+      "cpu_ok"
+     ],
+     "note": "Reads the horizon list, checks the matched SEG-Y headers and the sweetness cubes (a few minutes)."
+    },
+    {
+     "id": "reuse_attr",
+     "title": "Reuse saved horizon attributes",
+     "cells": [],
+     "code_file": "snippets/rfi_reuse_attributes.py",
+     "flags": [
+      "cpu_ok"
+     ],
+     "note": "Uses the team's saved *_3D_Attributes.csv instead of re-reading every trace (Cell 3, hours)."
+    },
+    {
+     "id": "qc",
+     "title": "Attribute QC",
+     "cells": [
+      4
+     ],
+     "flags": [
+      "cpu_ok"
+     ],
+     "note": "Checks dRMS / NdRMS / NRMS against their formulas."
+    },
+    {
+     "id": "wells",
+     "title": "Well trajectories and oil intervals",
+     "cells": [
+      5,
+      6
+     ],
+     "flags": [
+      "cpu_ok"
+     ],
+     "note": "Wells for the oil-proximity penalty."
+    },
+    {
+     "id": "rfi",
+     "title": "Compute and export RFI for every horizon",
+     "cells": [
+      7
+     ],
+     "flags": [
+      "cpu_ok",
+      "writes"
+     ],
+     "note": "Runs the notebook's own export for each horizon: <horizon>_RFI.csv + PNG."
+    }
+   ]
+  }
+ ]
+}

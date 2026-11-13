@@ -1,0 +1,4 @@
+4D ChronoSeis app (APGCE 2026 GeoHackathon, Challenge 3).
+The app runs the team's notebooks from https://github.com/dankkl89/Shell_Geohackathon unchanged (see README.md):
+clone both repos on the HPC and point the app at the notebook folder.
+No seismic, well or output data is included. Start on the HPC with: cd 4D-ChronoSeis && ./start_app.sh
