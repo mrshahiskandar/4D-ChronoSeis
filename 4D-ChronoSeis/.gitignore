@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+# never commit challenge data or run outputs
+*.sgy
+*.segy
+*.las
+*.dev
+*.chronoseis.json
+.chronoseis_workspace
+_app_runs/
+_cache/
+chronoseis_output/
+Output*/
+knowledge/*.jsonl
